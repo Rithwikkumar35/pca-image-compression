@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 import pickle
 
 # Load trained model
-model = pickle.load(open("../model/model.pkl", "rb"))
+model = pickle.load(open("model/model.pkl", "rb"))
 
 # PSNR function
 def psnr(original, compressed):
