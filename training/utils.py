@@ -1,29 +1,47 @@
 import numpy as np
 from sklearn.decomposition import PCA
 
-def psnr(original, compressed):
-    mse = np.mean((original - compressed) ** 2)
-    if mse == 0:
-        return 100
-    return 20 * np.log10(255.0 / np.sqrt(mse))
-
 def apply_pca(image, k):
-    pca = PCA(n_components=k)
-    transformed = pca.fit_transform(image)
-    reconstructed = pca.inverse_transform(transformed)
-    reconstructed = np.clip(reconstructed, 0, 255)
+    image = image.astype(float) / 255.0
 
-    variance = sum(pca.explained_variance_ratio_)
+    # Grayscale image
+    if len(image.shape) == 2:
+        h, w = image.shape
+        k = min(k, w)
+
+        pca = PCA(n_components=k)
+        transformed = pca.fit_transform(image)
+        reconstructed = pca.inverse_transform(transformed)
+
+    # Color image (RGB)
+    else:
+        h, w, c = image.shape
+        reconstructed = np.zeros_like(image)
+
+        for i in range(c):
+            channel = image[:, :, i]
+            k_channel = min(k, channel.shape[1])
+
+            pca = PCA(n_components=k_channel)
+            transformed = pca.fit_transform(channel)
+            reconstructed[:, :, i] = pca.inverse_transform(transformed)
+
+    # Clip + convert back
+    reconstructed = np.clip(reconstructed, 0, 1)
+    reconstructed = (reconstructed * 255).astype(np.uint8)
+
+    variance = np.var(reconstructed)
+
     return reconstructed, variance
 
 
-# 🔥 NEW: COLOR IMAGE SUPPORT
-def apply_pca_color(image, k):
-    r, g, b = image[:,:,0], image[:,:,1], image[:,:,2]
+def psnr(original, compressed):
+    original = original.astype(float)
+    compressed = compressed.astype(float)
 
-    r_rec, _ = apply_pca(r, k)
-    g_rec, _ = apply_pca(g, k)
-    b_rec, _ = apply_pca(b, k)
+    mse = np.mean((original - compressed) ** 2)
 
-    reconstructed = np.stack([r_rec, g_rec, b_rec], axis=2)
-    return reconstructed
+    if mse == 0:
+        return 100
+
+    return 20 * np.log10(255.0 / np.sqrt(mse))

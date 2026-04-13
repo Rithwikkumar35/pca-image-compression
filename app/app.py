@@ -1,124 +1,65 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-from sklearn.decomposition import PCA
 import pickle
-import matplotlib.pyplot as plt
+import os
 
-# Page config
+from training.utils import apply_pca, psnr
+
 st.set_page_config(page_title="PCA Compression", layout="wide")
 
-# Load CSS
-with open("app/style.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# Load CSS safely
+css_path = os.path.join(os.path.dirname(__file__), "style.css")
+if os.path.exists(css_path):
+    with open(css_path) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Load model
-model = pickle.load(open("model/model.pkl", "rb"))
+st.title("🚀 Intelligent Image Compression using PCA + ML")
 
-# PSNR
-def psnr(original, compressed):
-    mse = np.mean((original - compressed) ** 2)
-    if mse == 0:
-        return 100
-    return 20 * np.log10(255.0 / np.sqrt(mse))
+uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
-# PCA grayscale
-def compress_gray(image, k):
-    pca = PCA(n_components=int(k))
-    transformed = pca.fit_transform(image)
-    return np.clip(pca.inverse_transform(transformed), 0, 255)
+if uploaded_file:
+    # Load image
+    image = Image.open(uploaded_file).convert("RGB")
+    img = np.array(image)
 
-# PCA color
-def compress_color(image, k):
-    r, g, b = image[:,:,0], image[:,:,1], image[:,:,2]
-    return np.stack([
-        compress_gray(r, k),
-        compress_gray(g, k),
-        compress_gray(b, k)
-    ], axis=2)
+    # Slider (IMPORTANT RANGE FIX)
+    k = st.slider("Select Compression Level (K)", 20, 150, 50)
 
-# Cached graph
-@st.cache_data
-def compute_graph(img_np):
-    k_values = [5, 15, 25]
-    psnr_values = []
+    # Apply PCA
+    compressed, variance = apply_pca(img, k)
+    score = psnr(img, compressed)
 
-    for val in k_values:
-        if len(img_np.shape) == 2:
-            temp = compress_gray(img_np, val)
-        else:
-            temp = compress_color(img_np, val)
-
-        psnr_values.append(psnr(img_np, temp))
-
-    return k_values, psnr_values
-
-
-# 🔥 HEADER
-st.markdown('<div class="title">🚀 Intelligent Image Compression using PCA + ML</div>', unsafe_allow_html=True)
-
-st.write("Upload an image and explore compression with AI-powered recommendations.")
-
-# 🔥 SIDEBAR
-st.sidebar.header("⚙️ Controls")
-k = st.sidebar.slider("Compression Level (K)", 5, 25, 10)
-
-file = st.file_uploader("📤 Upload Image", type=["jpg", "png", "jpeg"])
-
-if file:
-    img = Image.open(file)
-    img_np = np.array(img)
-
-    # Compression
-    if len(img_np.shape) == 2:
-        compressed = compress_gray(img_np, k)
+    # Load ML model safely
+    model_path = os.path.join(os.path.dirname(__file__), "../model/model.pkl")
+    if os.path.exists(model_path):
+        with open(model_path, "rb") as f:
+            model = pickle.load(f)
+        predicted_k = int(model.predict([[variance, score]])[0])
+        predicted_k = max(20, min(150, predicted_k))
     else:
-        compressed = compress_color(img_np, k)
+        predicted_k = k
 
-    # Metrics
-    variance = np.var(compressed)
-    score = psnr(img_np, compressed)
-
-    predicted_k = model.predict([[variance, score]])[0]
-    predicted_k = int(max(5, min(25, predicted_k)))
-
-    # 🔥 IMAGE DISPLAY
+    # Layout
     col1, col2 = st.columns(2)
 
     with col1:
-        st.image(img_np, caption="🖼️ Original Image", use_column_width=True)
+        st.image(img, caption="Original Image", use_column_width=True)
 
     with col2:
-        st.image(compressed.astype('uint8'), caption="📉 Compressed Image", use_column_width=True)
+        st.image(compressed, caption="Compressed Image", use_column_width=True)
 
-    # 🔥 METRICS CARDS
-    m1, m2, m3 = st.columns(3)
+    # Metrics
+    st.markdown("### 📊 Metrics")
 
-    with m1:
-        st.markdown(f'<div class="card"><div class="metric">📊 PSNR<br>{score:.2f}</div></div>', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
 
-    with m2:
-        st.markdown(f'<div class="card"><div class="metric">📈 Variance<br>{variance:.2f}</div></div>', unsafe_allow_html=True)
+    col1.metric("PSNR", f"{score:.2f}")
+    col2.metric("Variance", f"{variance:.2f}")
+    col3.metric("Recommended K (AI)", predicted_k)
 
-    with m3:
-        st.markdown(f'<div class="card"><div class="metric">🤖 AI K<br>{predicted_k}</div></div>', unsafe_allow_html=True)
-
-    # 🔥 GRAPH
-    st.subheader("📊 Compression Analysis")
-
-    with st.spinner("Generating graph..."):
-        k_values, psnr_values = compute_graph(img_np)
-
-    fig, ax = plt.subplots()
-    ax.plot(k_values, psnr_values, marker='o')
-    ax.set_xlabel("K")
-    ax.set_ylabel("PSNR")
-    ax.set_title("Compression vs Quality")
-
-    st.pyplot(fig)
-
-    # 🔥 DOWNLOAD
-    result = Image.fromarray(compressed.astype('uint8'))
+    # Download
+    result = Image.fromarray(compressed)
     result.save("output.png")
 
     with open("output.png", "rb") as f:
