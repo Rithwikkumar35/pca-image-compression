@@ -1,11 +1,15 @@
+import sys
+import os
+
+# FIX PATH FOR STREAMLIT CLOUD
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import streamlit as st
 import numpy as np
 from PIL import Image
 import pickle
-import os
 
 from training.utils import apply_pca, psnr
-
 st.set_page_config(page_title="PCA Compression", layout="wide")
 
 # Load CSS safely
