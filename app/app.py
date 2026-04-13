@@ -5,23 +5,24 @@ from sklearn.decomposition import PCA
 import pickle
 import matplotlib.pyplot as plt
 
-# Load model
+# Load ML model
 model = pickle.load(open("model/model.pkl", "rb"))
 
+# PSNR
 def psnr(original, compressed):
     mse = np.mean((original - compressed) ** 2)
     if mse == 0:
         return 100
     return 20 * np.log10(255.0 / np.sqrt(mse))
 
-# PCA grayscale
+# PCA for grayscale
 def compress_gray(image, k):
     pca = PCA(n_components=int(k))
     transformed = pca.fit_transform(image)
     reconstructed = pca.inverse_transform(transformed)
     return np.clip(reconstructed, 0, 255)
 
-# PCA color
+# PCA for color
 def compress_color(image, k):
     r, g, b = image[:,:,0], image[:,:,1], image[:,:,2]
 
@@ -30,6 +31,23 @@ def compress_color(image, k):
     b = compress_gray(b, k)
 
     return np.stack([r, g, b], axis=2)
+
+# 🔥 FAST GRAPH (CACHED)
+@st.cache_data
+def compute_psnr_graph(img_np):
+    k_values = [5, 15, 25]   # reduced for speed
+    psnr_values = []
+
+    for val in k_values:
+        if len(img_np.shape) == 2:
+            temp = compress_gray(img_np, val)
+        else:
+            temp = compress_color(img_np, val)
+
+        psnr_values.append(psnr(img_np, temp))
+
+    return k_values, psnr_values
+
 
 # UI
 st.title("🚀 Intelligent Image Compression using PCA + ML")
@@ -43,7 +61,7 @@ if file:
 
     k = st.sidebar.slider("Compression Level (K)", 5, 25, 10)
 
-    # Detect grayscale or color
+    # Compress
     if len(img_np.shape) == 2:
         compressed = compress_gray(img_np, k)
     else:
@@ -65,7 +83,7 @@ if file:
     with col2:
         st.image(compressed.astype('uint8'), caption="Compressed Image")
 
-    # Metrics display
+    # Metrics
     st.write(f"📊 PSNR: {score:.2f}")
     st.write(f"📈 Variance: {variance:.2f}")
     st.write(f"🤖 Recommended K (AI): {predicted_k}")
@@ -76,22 +94,14 @@ if file:
     ratio = original_size / compressed_size
     st.write(f"📦 Compression Ratio: {ratio:.2f}")
 
-    # 🔥 GRAPH (NEW)
+    # 🔥 GRAPH (FAST + LOADING)
     st.subheader("📊 PSNR vs K Graph")
 
-    k_values = [5, 10, 15, 20, 25]
-    psnr_values = []
-
-    for val in k_values:
-        if len(img_np.shape) == 2:
-            temp = compress_gray(img_np, val)
-        else:
-            temp = compress_color(img_np, val)
-
-        psnr_values.append(psnr(img_np, temp))
+    with st.spinner("Generating graph..."):
+        k_values, psnr_values = compute_psnr_graph(img_np)
 
     fig, ax = plt.subplots()
-    ax.plot(k_values, psnr_values)
+    ax.plot(k_values, psnr_values, marker='o')
     ax.set_xlabel("K")
     ax.set_ylabel("PSNR")
     ax.set_title("Compression vs Quality")
