@@ -5,7 +5,14 @@ from sklearn.decomposition import PCA
 import pickle
 import matplotlib.pyplot as plt
 
-# Load ML model
+# Page config
+st.set_page_config(page_title="PCA Compression", layout="wide")
+
+# Load CSS
+with open("app/style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# Load model
 model = pickle.load(open("model/model.pkl", "rb"))
 
 # PSNR
@@ -15,27 +22,25 @@ def psnr(original, compressed):
         return 100
     return 20 * np.log10(255.0 / np.sqrt(mse))
 
-# PCA for grayscale
+# PCA grayscale
 def compress_gray(image, k):
     pca = PCA(n_components=int(k))
     transformed = pca.fit_transform(image)
-    reconstructed = pca.inverse_transform(transformed)
-    return np.clip(reconstructed, 0, 255)
+    return np.clip(pca.inverse_transform(transformed), 0, 255)
 
-# PCA for color
+# PCA color
 def compress_color(image, k):
     r, g, b = image[:,:,0], image[:,:,1], image[:,:,2]
+    return np.stack([
+        compress_gray(r, k),
+        compress_gray(g, k),
+        compress_gray(b, k)
+    ], axis=2)
 
-    r = compress_gray(r, k)
-    g = compress_gray(g, k)
-    b = compress_gray(b, k)
-
-    return np.stack([r, g, b], axis=2)
-
-# 🔥 FAST GRAPH (CACHED)
+# Cached graph
 @st.cache_data
-def compute_psnr_graph(img_np):
-    k_values = [5, 15, 25]   # reduced for speed
+def compute_graph(img_np):
+    k_values = [5, 15, 25]
     psnr_values = []
 
     for val in k_values:
@@ -49,19 +54,22 @@ def compute_psnr_graph(img_np):
     return k_values, psnr_values
 
 
-# UI
-st.title("🚀 Intelligent Image Compression using PCA + ML")
-st.write("Supports grayscale & color images with ML-based optimal compression.")
+# 🔥 HEADER
+st.markdown('<div class="title">🚀 Intelligent Image Compression using PCA + ML</div>', unsafe_allow_html=True)
 
-file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
+st.write("Upload an image and explore compression with AI-powered recommendations.")
+
+# 🔥 SIDEBAR
+st.sidebar.header("⚙️ Controls")
+k = st.sidebar.slider("Compression Level (K)", 5, 25, 10)
+
+file = st.file_uploader("📤 Upload Image", type=["jpg", "png", "jpeg"])
 
 if file:
     img = Image.open(file)
     img_np = np.array(img)
 
-    k = st.sidebar.slider("Compression Level (K)", 5, 25, 10)
-
-    # Compress
+    # Compression
     if len(img_np.shape) == 2:
         compressed = compress_gray(img_np, k)
     else:
@@ -74,31 +82,32 @@ if file:
     predicted_k = model.predict([[variance, score]])[0]
     predicted_k = int(max(5, min(25, predicted_k)))
 
-    # Layout
+    # 🔥 IMAGE DISPLAY
     col1, col2 = st.columns(2)
 
     with col1:
-        st.image(img_np, caption="Original Image")
+        st.image(img_np, caption="🖼️ Original Image", use_column_width=True)
 
     with col2:
-        st.image(compressed.astype('uint8'), caption="Compressed Image")
+        st.image(compressed.astype('uint8'), caption="📉 Compressed Image", use_column_width=True)
 
-    # Metrics
-    st.write(f"📊 PSNR: {score:.2f}")
-    st.write(f"📈 Variance: {variance:.2f}")
-    st.write(f"🤖 Recommended K (AI): {predicted_k}")
+    # 🔥 METRICS CARDS
+    m1, m2, m3 = st.columns(3)
 
-    # Compression Ratio
-    original_size = img_np.size
-    compressed_size = compressed.size
-    ratio = original_size / compressed_size
-    st.write(f"📦 Compression Ratio: {ratio:.2f}")
+    with m1:
+        st.markdown(f'<div class="card"><div class="metric">📊 PSNR<br>{score:.2f}</div></div>', unsafe_allow_html=True)
 
-    # 🔥 GRAPH (FAST + LOADING)
-    st.subheader("📊 PSNR vs K Graph")
+    with m2:
+        st.markdown(f'<div class="card"><div class="metric">📈 Variance<br>{variance:.2f}</div></div>', unsafe_allow_html=True)
+
+    with m3:
+        st.markdown(f'<div class="card"><div class="metric">🤖 AI K<br>{predicted_k}</div></div>', unsafe_allow_html=True)
+
+    # 🔥 GRAPH
+    st.subheader("📊 Compression Analysis")
 
     with st.spinner("Generating graph..."):
-        k_values, psnr_values = compute_psnr_graph(img_np)
+        k_values, psnr_values = compute_graph(img_np)
 
     fig, ax = plt.subplots()
     ax.plot(k_values, psnr_values, marker='o')
@@ -108,7 +117,7 @@ if file:
 
     st.pyplot(fig)
 
-    # Download
+    # 🔥 DOWNLOAD
     result = Image.fromarray(compressed.astype('uint8'))
     result.save("output.png")
 
