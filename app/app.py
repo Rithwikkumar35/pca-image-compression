@@ -1,70 +1,116 @@
-import sys
-import os
-
-# FIX PATH FOR STREAMLIT CLOUD
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import streamlit as st
 import numpy as np
 from PIL import Image
 import pickle
+import os
+import sys
+import matplotlib.pyplot as plt
 
-from training.utils import apply_pca, psnr
+# ---------- FIX IMPORT PATH ----------
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from utils.image_utils import apply_pca, calculate_psnr
+
+# ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="PCA Compression", layout="wide")
 
-# Load CSS safely
+# ---------- LOAD CSS ----------
 css_path = os.path.join(os.path.dirname(__file__), "style.css")
 if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-st.title("🚀 Intelligent Image Compression using PCA + ML")
+# ---------- LOAD MODEL ----------
+@st.cache_resource
+def load_model():
+    return pickle.load(open("model/model.pkl", "rb"))
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
+model = load_model()
 
-if uploaded_file:
-    # Load image
-    image = Image.open(uploaded_file).convert("RGB")
+# ---------- TITLE ----------
+st.markdown("<h1 class='title'>🚀 Intelligent Image Compression using PCA + AI</h1>", unsafe_allow_html=True)
+
+# ---------- FILE UPLOAD ----------
+uploaded = st.file_uploader("📤 Upload Image", type=["jpg", "jpeg", "png"])
+
+if uploaded:
+
+    # ---------- LOAD IMAGE ----------
+    image = Image.open(uploaded).convert("RGB")
     img = np.array(image)
 
-    # Slider (IMPORTANT RANGE FIX)
-    k = st.slider("Select Compression Level (K)", 20, 150, 50)
+    # ---------- SLIDER ----------
+    k = st.slider("🎚️ Compression Level (K)", 5, 50, 25)
 
-    # Apply PCA
-    compressed, variance = apply_pca(img, k)
-    score = psnr(img, compressed)
+    # ---------- FAST PROCESS (CACHED) ----------
+    @st.cache_data
+    def process(img, k):
+        compressed = apply_pca(img, k)
+        psnr = calculate_psnr(img, compressed)
+        variance = np.var(img - compressed)
+        return compressed, psnr, variance
 
-    # Load ML model safely
-    model_path = os.path.join(os.path.dirname(__file__), "../model/model.pkl")
-    if os.path.exists(model_path):
-        with open(model_path, "rb") as f:
-            model = pickle.load(f)
-        predicted_k = int(model.predict([[variance, score]])[0])
-        predicted_k = max(20, min(150, predicted_k))
-    else:
-        predicted_k = k
+    compressed, score, variance = process(img, k)
 
-    # Layout
+    # ---------- AI PREDICTION ----------
+    try:
+        predicted_k = model.predict([[variance, score]])[0]
+        predicted_k = int(max(5, min(50, predicted_k)))
+    except:
+        predicted_k = k  # fallback
+
+    # ---------- DISPLAY IMAGES ----------
     col1, col2 = st.columns(2)
 
     with col1:
-        st.image(img, caption="Original Image", use_column_width=True)
+        st.image(img, caption="📷 Original Image", use_column_width=True)
 
     with col2:
-        st.image(compressed, caption="Compressed Image", use_column_width=True)
+        st.image(compressed, caption="🧠 Compressed Image", use_column_width=True)
 
-    # Metrics
+    # ---------- METRICS ----------
     st.markdown("### 📊 Metrics")
 
-    col1, col2, col3 = st.columns(3)
+    m1, m2, m3 = st.columns(3)
 
-    col1.metric("PSNR", f"{score:.2f}")
-    col2.metric("Variance", f"{variance:.2f}")
-    col3.metric("Recommended K (AI)", predicted_k)
+    m1.metric("PSNR", f"{score:.2f}")
+    m2.metric("Variance", f"{variance:.2f}")
+    m3.metric("Recommended K (AI)", predicted_k)
 
-    # Download
+    # ---------- REAL FILE COMPRESSION ----------
     result = Image.fromarray(compressed)
-    result.save("output.png")
 
-    with open("output.png", "rb") as f:
-        st.download_button("📥 Download Compressed Image", f, "compressed.png")
+    output_path = "compressed.jpg"
+    result.save(output_path, "JPEG", quality=60, optimize=True)
+
+    # ---------- FILE SIZE ----------
+    original_size = len(uploaded.getvalue()) / 1024
+    compressed_size = os.path.getsize(output_path) / 1024
+
+    st.markdown("### 📦 File Size Comparison")
+
+    s1, s2 = st.columns(2)
+    s1.metric("Original Size (KB)", f"{original_size:.2f}")
+    s2.metric("Compressed Size (KB)", f"{compressed_size:.2f}")
+
+    # ---------- DOWNLOAD ----------
+    with open(output_path, "rb") as f:
+        st.download_button("📥 Download Compressed Image", f, "compressed.jpg")
+
+    # ---------- GRAPH ----------
+    st.markdown("### 📈 Compression Analysis")
+
+    ks = list(range(5, 50, 5))
+    psnr_values = []
+
+    for val in ks:
+        comp = apply_pca(img, val)
+        psnr_values.append(calculate_psnr(img, comp))
+
+    fig = plt.figure()
+    plt.plot(ks, psnr_values)
+    plt.xlabel("K (Compression Level)")
+    plt.ylabel("PSNR (Quality)")
+    plt.title("Compression vs Quality")
+
+    st.pyplot(fig)
