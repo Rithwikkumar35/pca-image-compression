@@ -1,36 +1,105 @@
-/* Background */
+/* ===== GLOBAL BACKGROUND ===== */
 body {
-    background-color: #0e1117;
+    background: linear-gradient(135deg, #0e1117, #111827);
+    color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-/* Title */
+/* ===== TITLE (GRADIENT + GLOW) ===== */
 .title {
-    font-size: 40px;
-    font-weight: bold;
+    font-size: 44px;
+    font-weight: 700;
     text-align: center;
-    background: linear-gradient(90deg, #ff4b4b, #1f77b4);
+    background: linear-gradient(90deg, #ff4b4b, #1f77b4, #00c6ff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
 }
 
-/* Cards */
+/* ===== CARD (GLASSMORPHISM EFFECT) ===== */
 .card {
-    padding: 15px;
-    border-radius: 12px;
-    background-color: #1c1f26;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(28, 31, 38, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     text-align: center;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.6);
+    transition: all 0.3s ease;
 }
 
-/* Metrics text */
+/* Hover effect */
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0px 12px 25px rgba(0, 0, 0, 0.8);
+}
+
+/* ===== METRIC TEXT ===== */
 .metric {
-    font-size: 20px;
-    font-weight: bold;
+    font-size: 22px;
+    font-weight: 600;
+    color: #e5e7eb;
 }
 
-/* Button */
+/* ===== SMALL LABEL TEXT ===== */
+.label {
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+/* ===== DOWNLOAD BUTTON ===== */
 .stDownloadButton > button {
     background: linear-gradient(90deg, #ff4b4b, #1f77b4);
     color: white;
-    border-radius: 8px;
+    border-radius: 10px;
+    padding: 10px 18px;
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Button hover */
+.stDownloadButton > button:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 6px 15px rgba(31, 119, 180, 0.6);
+}
+
+/* ===== SLIDER CUSTOM STYLE ===== */
+.stSlider > div {
+    color: #ff4b4b;
+}
+
+/* ===== FILE UPLOADER ===== */
+.stFileUploader {
+    border: 1px dashed #444;
+    border-radius: 12px;
+    padding: 10px;
+    background-color: rgba(255,255,255,0.02);
+}
+
+/* ===== IMAGE STYLE ===== */
+img {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+/* Image hover zoom */
+img:hover {
+    transform: scale(1.02);
+}
+
+/* ===== SCROLLBAR (PREMIUM TOUCH) ===== */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(#ff4b4b, #1f77b4);
+    border-radius: 10px;
 }
