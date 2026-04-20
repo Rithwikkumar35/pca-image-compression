@@ -1,122 +1,132 @@
-# 🚀 Intelligent Image Compression using PCA + ML
+Intelligent Image Compression using PCA & Machine Learning
 
-This project is an end-to-end machine learning application that performs image compression using Principal Component Analysis (PCA) and predicts the optimal compression level using a trained ML model.
+This project is a web-based application that performs image compression using **Principal Component Analysis (PCA)** and enhances it with a **machine learning model** to recommend the optimal compression level.
 
-🌐 **Live Demo:** https://pca-image-compression-autwn9ng38h5brhychvur7.streamlit.app
-
----
-
-## 📌 Features
-
-* 📷 Upload any image (JPG, PNG)
-* 🎚 Adjust compression level (K) using slider
-* 🧠 AI predicts optimal compression level
-* 📊 Displays:
-
-  * PSNR (quality metric)
-  * Variance
-* 🖼 Shows original vs compressed image
-* 📥 Download compressed image
-* 🌍 Deployed online using Streamlit Cloud
+The system focuses on balancing **image quality** and **file size**, while providing an intuitive and interactive user interface.
 
 ---
 
-## 🧠 How It Works
-
-### 1. PCA Compression
-
-* Converts image into lower dimensions
-* Reduces redundant information
-* Reconstructs compressed image
-
-### 2. Feature Extraction
-
-* Variance of compressed image
-* PSNR (Peak Signal-to-Noise Ratio)
-
-### 3. Machine Learning Model
-
-* Trained on multiple K values
-* Learns relationship between:
-
-  * Compression level (K)
-  * Image quality metrics
-* Predicts best K for new images
+## 🌐 Live Application
+👉 https://pca-image-compression-autwn9ng38h5brhychvur7.streamlit.app
 
 ---
 
-## 🏗️ Project Structure
+## 📌 Key Features
+
+- 📷 Upload images in JPG, PNG, or JPEG format  
+- 🎚 Adjust compression level dynamically using a slider  
+- 🧠 AI-based prediction of optimal compression level (K)  
+- 📊 Real-time metrics:
+  - PSNR (Peak Signal-to-Noise Ratio)
+  - Variance (error distribution)
+- 🖼 Side-by-side comparison of original and compressed images  
+- 📉 Visualization of compression vs quality using graphs  
+- 📥 Export compressed images in multiple formats:
+  - JPEG
+  - PNG
+  - WEBP  
+- ⚡ Optimized for performance using caching and resizing  
+
+---
+
+## 🧠 System Overview
+
+The project is built around two core components:
+
+### 1. PCA-Based Compression
+- Each image is converted into numerical data
+- PCA reduces dimensionality by retaining important features
+- The image is reconstructed using selected principal components
+
+### 2. Machine Learning Model
+- A regression model is trained on:
+  - Compression level (K)
+  - PSNR values
+  - Variance
+- The model predicts the **best K value** for new images automatically
+
+---
+
+## ⚙️ How It Works
+
+1. User uploads an image  
+2. Image is resized for faster processing  
+3. PCA is applied based on selected K value  
+4. Image is reconstructed  
+5. Quality metrics (PSNR & Variance) are calculated  
+6. ML model predicts optimal K  
+7. Results are displayed with visual comparison and graphs  
+8. User can download the compressed image  
+
+---
+
+## 📊 Metrics Used
+
+- **PSNR (Peak Signal-to-Noise Ratio)**  
+  Measures image quality after compression  
+  Higher value = better quality  
+
+- **Variance**  
+  Indicates how much information is lost during compression  
+
+---
+
+## 🏗 Project Structure
+
 
 pca-image-compression/
 │
 ├── app/
-│   └── app.py                # Streamlit web app
+│ ├── app.py # Main Streamlit application
+│ └── style.css # Custom UI styling
 │
-├── model/
-│   └── model.pkl            # Trained ML model
+├── utils/
+│ └── image_utils.py # PCA and PSNR functions
 │
 ├── training/
-│   ├── dataset.py           # Load dataset
-│   ├── train.py             # Generate training data
-│   ├── model.py             # Train ML model
-│   ├── utils.py             # PCA + PSNR functions
+│ ├── dataset.py # Dataset handling
+│ ├── train.py # Training data generation
+│ ├── model.py # ML model training
+│
+├── model/
+│ └── model.pkl # Trained ML model
 │
 ├── requirements.txt
 └── README.md
 
----
-
-## ⚙️ Tech Stack
-
-* Python
-* Streamlit
-* NumPy
-* Pandas
-* Scikit-learn
-* Pillow
 
 ---
 
-## 📊 Key Concepts Used
+## 🛠 Tech Stack
 
-* Principal Component Analysis (PCA)
-* Dimensionality Reduction
-* Image Reconstruction
-* Regression Model
-* PSNR (Image Quality Metric)
+- **Python**
+- **NumPy** – numerical operations  
+- **Scikit-learn** – PCA and ML model  
+- **Pillow** – image processing  
+- **Matplotlib** – data visualization  
+- **Streamlit** – web application framework  
 
 ---
 
-## 🚀 How to Run Locally
+## 🚀 Running Locally
 
+```bash
 git clone https://github.com/Rithwikkumar35/pca-image-compression.git
-cd pca-image-compression/app
-pip install -r ../requirements.txt
-streamlit run app.py
+cd pca-image-compression
 
----
-
-## 🌐 Deployment
-
-This project is deployed using Streamlit Community Cloud.
-
----
-
-## 🎯 Future Improvements
-
-* Use Deep Learning (Autoencoders)
-* Support color images (RGB)
-* Batch image compression
-* Improve UI/UX design
-
----
-
-## 👨‍💻 Author
+pip install -r requirements.txt
+streamlit run app/app.py
+📈 Performance Optimization
+Image resizing for faster PCA computation
+Caching to avoid recomputation
+Reduced graph computations for smooth UI interaction
+🎯 Future Improvements
+Implement deep learning-based compression (Autoencoders)
+Support full-resolution image processing
+Add batch image compression
+Improve model accuracy with more training data
+Build API backend for integration
+👨‍💻 Author
 
 Rithwik Kumar Kodari
 
----
-
-## ⭐ If you like this project
-
-Give it a ⭐ on GitHub!
